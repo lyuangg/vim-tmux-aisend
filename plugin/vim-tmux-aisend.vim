@@ -218,11 +218,11 @@ function! s:TmuxVarsInteractive(mode) abort
     let l:target['session'] = l:active.session
 
     if a:mode ==# 'window'
-        let l:windows = s:TmuxWindows()
+        let l:windows = systemlist('tmux list-windows -t ' . shellescape(l:active.session) . ' -F "#{window_index}"')
         if len(l:windows) == 1
             let l:target['window'] = l:windows[0]
         else
-            let l:w = input('Window: ', '', 'customlist,TmuxWindowNames')
+            let l:w = input('Window: ', l:active.window, 'customlist,TmuxWindowNames')
             if empty(l:w)
                 return {}
             endif
@@ -232,15 +232,22 @@ function! s:TmuxVarsInteractive(mode) abort
         let l:target['window'] = l:active.window
     endif
 
-    " Pane: in 'window' mode always auto-select, in 'pane' mode prompt
     if a:mode ==# 'pane'
-        if g:ai_tmux_autoset_pane
-            let l:panes = s:AutoTmuxPanes()
-        else
-            let l:panes = s:TmuxPanes()
+        let l:panes = systemlist('tmux list-panes -t ' . shellescape(l:active.session . ':' . l:active.window) . ' -F "#{pane_index} #{pane_height}"')
+        " Filter out current pane
+        let l:filtered = []
+        for line in l:panes
+            let [idx, h; _] = split(line)
+            if idx !=# l:active.pane
+                call add(l:filtered, idx)
+            endif
+        endfor
+        if len(l:filtered) == 0
+            " All panes filtered out (only current pane), just list all
+            let l:filtered = map(copy(l:panes), {_, v -> split(v)[0]})
         endif
-        if len(l:panes) == 1
-            let l:target['pane'] = l:panes[0]
+        if len(l:filtered) == 1
+            let l:target['pane'] = l:filtered[0]
         else
             let l:p = input('Pane: ', '', 'customlist,TmuxPaneNumbers')
             if empty(l:p)
@@ -251,12 +258,11 @@ function! s:TmuxVarsInteractive(mode) abort
     else
         " 'window' mode: auto-pick largest non-current pane in selected window
         let l:panes = systemlist('tmux list-panes -t ' . shellescape(l:target['session'] . ':' . l:target['window']) . ' -F "#{pane_index} #{pane_height} #{pane_id}"')
-        let l:current = s:ActiveTarget()
         let l:best_pane = ''
         let l:best_h = -1
         for line in l:panes
             let [idx, h, pid; _] = split(line)
-            if l:current.session ==# l:target['session'] && l:current.window ==# l:target['window'] && idx ==# l:current.pane
+            if l:active.session ==# l:target['session'] && l:active.window ==# l:target['window'] && idx ==# l:active.pane
                 continue
             endif
             if str2nr(h) > l:best_h
