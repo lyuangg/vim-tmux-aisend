@@ -21,6 +21,11 @@ if !exists("g:ai_tmux_fallback_clipboard")
     let g:ai_tmux_fallback_clipboard = 1
 endif
 
+" Interactive mode: 'pane' = prompt pane every send, 'window' = prompt window+pane every send
+if !exists("g:ai_tmux_interactive")
+    let g:ai_tmux_interactive = 0
+endif
+
 " Auto-select the largest non-current pane (like tslime's autoset_pane)
 if !exists("g:ai_tmux_autoset_pane")
     let g:ai_tmux_autoset_pane = 0
@@ -190,6 +195,54 @@ function! s:TmuxVars() abort
     echo 'Target set: ' . l:session . ':' . l:window . '.' . l:pane
 endfunction
 
+" Interactive prompt that returns a target dict without persisting to g:ai_send_target
+" mode: 'window' → prompt window + pane, 'pane' → prompt pane only
+function! s:TmuxVarsInteractive(mode) abort
+    if !s:IsTmux()
+        return {}
+    endif
+
+    let l:active = s:ActiveTarget()
+    let l:target = {}
+
+    " Always auto-select session (current session is sufficient)
+    let l:target['session'] = l:active.session
+
+    if a:mode ==# 'window'
+        let l:windows = s:TmuxWindows()
+        if len(l:windows) == 1
+            let l:target['window'] = l:windows[0]
+        else
+            let l:w = input('Window: ', '', 'customlist,TmuxWindowNames')
+            if empty(l:w)
+                return {}
+            endif
+            let l:target['window'] = l:w
+        endif
+    else
+        let l:target['window'] = l:active.window
+    endif
+
+    " Pane
+    if g:ai_tmux_autoset_pane
+        let l:panes = s:AutoTmuxPanes()
+    else
+        let l:panes = s:TmuxPanes()
+    endif
+
+    if len(l:panes) == 1
+        let l:target['pane'] = l:panes[0]
+    else
+        let l:p = input('Pane: ', '', 'customlist,TmuxPaneNumbers')
+        if empty(l:p)
+            return {}
+        endif
+        let l:target['pane'] = l:p
+    endif
+
+    return l:target
+endfunction
+
 " Completion (public, for customlist)
 function! TmuxSessionNames(A, L, P)
     return s:TmuxSessions()
@@ -276,10 +329,16 @@ function! s:BuildPaneId() abort
     return l:target
 endfunction
 
-function! s:SendToTmux(content) abort
+function! s:SendToTmux(content, ...) abort
     let l:tmp = tempname()
     call writefile(split(a:content, "\n"), l:tmp)
-    let l:pane = s:BuildPaneId()
+
+    " Optional pane argument overrides auto-detection
+    if a:0 > 0 && !empty(a:1)
+        let l:pane = a:1
+    else
+        let l:pane = s:BuildPaneId()
+    endif
 
     if empty(l:pane)
         call system('tmux load-buffer ' . shellescape(l:tmp))
@@ -310,27 +369,39 @@ endfunction
 function! SendForAI(start, end)
     let l:content = s:BuildContent(a:start, a:end)
 
-    if s:IsTmux()
-        " If no target is set (empty g:ai_send_target and g:ai_tmux_target_pane),
-        " and auto-select can't find a target, prompt interactively
-        if empty(g:ai_send_target) && empty(g:ai_tmux_target_pane)
-            let l:pane = s:BuildPaneId()
-            if empty(l:pane)
-                call s:TmuxVars()
-            endif
+    if !s:IsTmux()
+        if g:ai_tmux_fallback_clipboard
+            call s:CopyToClipboard(l:content)
+            echo "Copied to clipboard 📋"
+        else
+            echo "Not in tmux ❌"
         endif
-
-        call s:SendToTmux(l:content)
-        echo "Sent to tmux 🚀"
         return
     endif
 
-    if g:ai_tmux_fallback_clipboard
-        call s:CopyToClipboard(l:content)
-        echo "Copied to clipboard 📋"
-    else
-        echo "Not in tmux ❌"
+    " Interactive mode: prompt every time
+    if !empty(g:ai_tmux_interactive)
+        let l:target = s:TmuxVarsInteractive(g:ai_tmux_interactive)
+        if empty(l:target)
+            echo "Cancelled ❌"
+            return
+        endif
+        let l:target_str = l:target['session'] . ':' . l:target['window'] . '.' . l:target['pane']
+        call s:SendToTmux(l:content, l:target_str)
+        echo "Sent to " . l:target_str . " 🚀"
+        return
     endif
+
+    " Normal mode: preset → auto-select → interactive fallback
+    if empty(g:ai_send_target) && empty(g:ai_tmux_target_pane)
+        let l:pane = s:BuildPaneId()
+        if empty(l:pane)
+            call s:TmuxVars()
+        endif
+    endif
+
+    call s:SendToTmux(l:content)
+    echo "Sent to tmux 🚀"
 endfunction
 
 function! AISetTarget()

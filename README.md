@@ -60,6 +60,12 @@ git clone https://github.com/lyuangg/vim-tmux-aisend ~/.vim/pack/plugins/start/v
 ### Configuration
 
 ```vim
+" Interactive mode: choose target every time you send
+" 'pane'   → prompt for pane only (session+window auto)
+" 'window' → prompt for window, then pane
+" 0        → preset / auto-select (default)
+let g:ai_tmux_interactive = 'pane'
+
 " Force a specific pane (disables auto-select)
 let g:ai_tmux_target_pane = '%1'
 

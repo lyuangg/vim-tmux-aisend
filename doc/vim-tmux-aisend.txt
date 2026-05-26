@@ -115,6 +115,14 @@ g:ai_tmux_target_pane
     Force a specific tmux pane ID (e.g. '%1').  When empty (the default),
     falls through to g:ai_send_target or auto-select.
 
+                                *g:ai_tmux_interactive*
+g:ai_tmux_interactive
+    Set to 'pane' or 'window' to prompt interactively every time you send,
+    instead of using a preset or auto-select.
+      'pane'   → prompts for pane only (session+window auto-selected)
+      'window' → prompts for window, then pane
+      0        → preset / auto-select mode (default)
+
                                 *g:ai_tmux_fallback_clipboard*
 g:ai_tmux_fallback_clipboard
     When vim is not inside tmux, fall back to copying to clipboard.
