@@ -47,6 +47,11 @@ if !exists("g:ai_send_target")
     let g:ai_send_target = {}
 endif
 
+" File path in output: 0 = relative (default), 1 = absolute
+if !exists("g:ai_tmux_use_absolute_path")
+    let g:ai_tmux_use_absolute_path = 0
+endif
+
 " =========================
 " Tmux query helpers
 " =========================
@@ -264,7 +269,11 @@ endfunction
 " =========================
 
 function! s:BuildContent(start, end) abort
-    let l:file = expand('%')
+    if g:ai_tmux_use_absolute_path
+        let l:file = expand('%:p')
+    else
+        let l:file = expand('%')
+    endif
     let l:filetype = &filetype
     let l:lines = getline(a:start, a:end)
     let l:content = join(l:lines, "\n")

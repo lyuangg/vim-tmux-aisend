@@ -154,6 +154,11 @@ g:ai_send_target
     Dictionary storing manual target: {'session': 's', 'window': 'w',
     'pane': 'p'}.  Set via |:AITarget| or directly.
 
+                                *g:ai_tmux_use_absolute_path*
+g:ai_tmux_use_absolute_path
+    Whether the file path in the output is absolute or relative to the
+    working directory.  0 = relative (default), 1 = absolute.
+
 Example:
     let g:ai_tmux_autoset_pane = 1
     let g:ai_tmux_no_mappings = 1

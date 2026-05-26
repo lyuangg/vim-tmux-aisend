@@ -79,6 +79,9 @@ let g:ai_tmux_autoset_pane = 1
 let g:ai_tmux_always_current_session = 0
 let g:ai_tmux_always_current_window = 0
 
+" File path in output: 0 = relative (default), 1 = absolute
+let g:ai_tmux_use_absolute_path = 1
+
 " Disable default mappings, use <Plug> instead
 let g:ai_tmux_no_mappings = 1
 nmap <leader>st <Plug>SetAITarget
