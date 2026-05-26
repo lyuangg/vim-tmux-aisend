@@ -311,6 +311,15 @@ function! SendForAI(start, end)
     let l:content = s:BuildContent(a:start, a:end)
 
     if s:IsTmux()
+        " If no target is set (empty g:ai_send_target and g:ai_tmux_target_pane),
+        " and auto-select can't find a target, prompt interactively
+        if empty(g:ai_send_target) && empty(g:ai_tmux_target_pane)
+            let l:pane = s:BuildPaneId()
+            if empty(l:pane)
+                call s:TmuxVars()
+            endif
+        endif
+
         call s:SendToTmux(l:content)
         echo "Sent to tmux 🚀"
         return

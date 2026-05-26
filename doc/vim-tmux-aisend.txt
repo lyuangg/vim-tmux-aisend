@@ -34,13 +34,14 @@ Send to AI (~at):
     Visually select lines (or press in normal mode for the current line) and
     press <leader>at. The formatted text is sent to the target tmux pane.
 
-    Auto mode (default):
-        Picks the largest non-current pane. With two panes, picks the other
-        one. With one pane, falls back to clipboard.
+    Target resolution order:
+        1. g:ai_tmux_target_pane — manual override
+        2. g:ai_send_target — set via |:AITarget|
+        3. Auto-select — largest non-current pane
+        4. Interactive prompt — if auto-select returns no target
 
-    Manual mode (see |vim-tmux-aisend-target|):
-        Use :AITarget or <leader>as to interactively set session:window.pane.
-        Use :AIClearTarget to revert to auto mode.
+    So on first use you can just press <leader>at directly — if no target
+    is configured, it will prompt you to pick session:window.pane.
 
 Set target (~as):
     Press <leader>as to interactively select session, window, and pane with

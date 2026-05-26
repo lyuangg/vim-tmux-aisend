@@ -50,11 +50,12 @@ git clone https://github.com/lyuangg/vim-tmux-aisend ~/.vim/pack/plugins/start/v
 :AIClearTarget        Clear manual target, revert to auto-select
 ```
 
-### Target priority
+### Target resolution（按 `<leader>at` 发送时的查找顺序）
 
-1. `g:ai_tmux_target_pane` — raw pane ID override (e.g. `'%1'`)
-2. `g:ai_send_target` — manual target set via `:AITarget`
-3. Auto — largest non-current tmux pane
+1. `g:ai_tmux_target_pane` — 硬编码 pane ID 覆盖（如 `'%1'`）
+2. `g:ai_send_target` — 通过 `:AITarget` 手动设置的 session:window.pane
+3. **自动选择** — 面积最大的非当前 pane（两个 pane 时直接选另一个）
+4. **交互提示** — 以上都无法确定目标时，自动弹出交互选择框
 
 ### Configuration
 
