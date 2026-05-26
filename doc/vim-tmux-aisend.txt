@@ -1,0 +1,160 @@
+*vim-tmux-aisend.txt*  Send code context to AI via clipboard or tmux
+
+==============================================================================
+Contents                                   *vim-tmux-aisend-contents*
+
+    1. Introduction ........................... |vim-tmux-aisend-intro|
+    2. Usage .................................. |vim-tmux-aisend-usage|
+    3. Mappings ............................... |vim-tmux-aisend-mappings|
+    4. Commands ............................... |vim-tmux-aisend-commands|
+    5. Manual Target .......................... |vim-tmux-aisend-target|
+    6. Configuration .......................... |vim-tmux-aisend-config|
+    7. License ................................ |vim-tmux-aisend-license|
+
+==============================================================================
+1. Introduction                           *vim-tmux-aisend-intro*
+
+This plugin formats selected code with file path, line numbers, and syntax
+type, then either copies it to the clipboard or sends it to a tmux pane.
+
+Typical use case: selecting code in Vim and pasting it directly into a Claude
+Code / AI session running in an adjacent tmux pane.
+
+The send target can be auto-selected (largest non-current pane) or manually
+specified via interactive prompts with completion, similar to tslime.vim.
+
+==============================================================================
+2. Usage                                       *vim-tmux-aisend-usage*
+
+Copy for AI (~ay):
+    Visually select lines, press <leader>ay. The formatted text is copied to
+    the system clipboard.
+
+Send to AI (~at):
+    Visually select lines (or press in normal mode for the current line) and
+    press <leader>at. The formatted text is sent to the target tmux pane.
+
+    Auto mode (default):
+        Picks the largest non-current pane. With two panes, picks the other
+        one. With one pane, falls back to clipboard.
+
+    Manual mode (see |vim-tmux-aisend-target|):
+        Use :AITarget or <leader>as to interactively set session:window.pane.
+        Use :AIClearTarget to revert to auto mode.
+
+Set target (~as):
+    Press <leader>as to interactively select session, window, and pane with
+    tab completion.  The target is stored in |g:ai_send_target|.
+
+==============================================================================
+3. Mappings                                 *vim-tmux-aisend-mappings*
+
+<Plug> mappings (always available):
+
+    <Plug>CopyForAI           Visual: copy selection to clipboard
+    <Plug>SendSelectionToAI   Visual: send selection to tmux/clipboard
+    <Plug>SendLineToAI        Normal: send current line to tmux/clipboard
+    <Plug>SetAITarget         Normal: interactive target selection
+
+Default key mappings (disable with |g:ai_tmux_no_mappings|):
+
+    <leader>ay                Visual: copy selection
+    <leader>at                Visual/Normal: send to tmux
+    <leader>as                Normal: set tmux target interactively
+
+==============================================================================
+4. Commands                             *vim-tmux-aisend-commands*
+
+    :[range]CopyForAI    Copy range to clipboard with context
+    :[range]SendForAI    Send range to tmux (or clipboard fallback)
+    :AITarget            Interactively set tmux session:window.pane
+    :AIClearTarget       Clear manual target, revert to auto-select
+
+Examples:
+    :'<,'>CopyForAI      Copy visual selection
+    :%SendForAI          Send entire buffer
+    :10,20SendForAI      Send lines 10 through 20
+
+==============================================================================
+5. Manual Target                           *vim-tmux-aisend-target*
+
+Like tslime.vim, you can manually specify the exact tmux pane to send to.
+
+Setting the target:
+
+    :AITarget
+
+Prompts for session, window, and pane with tab completion:
+  - Session: lists all tmux sessions
+  - Window: lists all windows in the chosen session
+  - Pane:   lists all panes in the chosen session:window
+
+Once set, every <leader>at / :SendForAI will send to that pane.
+
+    :AIClearTarget
+
+Clears the manual target and reverts to auto-select.
+
+The current target is stored in |g:ai_send_target| as a dictionary:
+    {'session': 'mysession', 'window': '1', 'pane': '2'}
+
+You can also set it directly in your vimrc:
+    let g:ai_send_target = {'session': '0', 'window': '0', 'pane': '1'}
+
+Priority for target resolution:
+  1. |g:ai_tmux_target_pane| if set (raw pane_id, e.g. '%1')
+  2. |g:ai_send_target| if set (session:window.pane)
+  3. Auto-select largest non-current pane (default)
+
+==============================================================================
+6. Configuration                           *vim-tmux-aisend-config*
+
+                                *g:ai_tmux_target_pane*
+g:ai_tmux_target_pane
+    Force a specific tmux pane ID (e.g. '%1').  When empty (the default),
+    falls through to g:ai_send_target or auto-select.
+
+                                *g:ai_tmux_fallback_clipboard*
+g:ai_tmux_fallback_clipboard
+    When vim is not inside tmux, fall back to copying to clipboard.
+    Default: 1 (enabled).
+
+                                *g:ai_tmux_autoset_pane*
+g:ai_tmux_autoset_pane
+    When selecting a pane via |:AITarget|, skip the pane prompt and
+    automatically select the tallest (most content) pane.
+    Default: 0 (disabled).
+
+                                *g:ai_tmux_always_current_session*
+g:ai_tmux_always_current_session
+    When selecting a session via |:AITarget|, show only the current
+    session instead of listing all sessions.  Default: 1 (enabled).
+
+                                *g:ai_tmux_always_current_window*
+g:ai_tmux_always_current_window
+    When selecting a window via |:AITarget|, show only the current
+    window.  Default: 1 (enabled).
+
+                                *g:ai_tmux_no_mappings*
+g:ai_tmux_no_mappings
+    Set to 1 to prevent default <leader> mappings (ay/at/as).
+    You can then map <Plug> yourself.
+
+                                *g:ai_send_target*
+g:ai_send_target
+    Dictionary storing manual target: {'session': 's', 'window': 'w',
+    'pane': 'p'}.  Set via |:AITarget| or directly.
+
+Example:
+    let g:ai_tmux_autoset_pane = 1
+    let g:ai_tmux_no_mappings = 1
+    nmap <leader>st <Plug>SetAITarget
+    vmap <leader>ss <Plug>SendSelectionToAI
+
+==============================================================================
+7. License                                   *vim-tmux-aisend-license*
+
+DWTFYWTPL — Do What The Fuck You Want To Public License.
+
+==============================================================================
+ vim:tw=78:ts=8:ft=help:norl:
