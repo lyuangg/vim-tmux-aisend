@@ -159,6 +159,11 @@ g:ai_tmux_use_absolute_path
     Whether the file path in the output is absolute or relative to the
     working directory.  0 = relative (default), 1 = absolute.
 
+                                *g:ai_tmux_raw_content*
+g:ai_tmux_raw_content
+    Output format.  0 (default) = send file path, line numbers, and code
+    fence.  1 = send only the raw selected text, no metadata.
+
 Example:
     let g:ai_tmux_autoset_pane = 1
     let g:ai_tmux_no_mappings = 1

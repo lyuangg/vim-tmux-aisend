@@ -52,6 +52,11 @@ if !exists("g:ai_tmux_use_absolute_path")
     let g:ai_tmux_use_absolute_path = 0
 endif
 
+" Output format: 0 = full (file+lines+code, default), 1 = raw content only
+if !exists("g:ai_tmux_raw_content")
+    let g:ai_tmux_raw_content = 0
+endif
+
 " =========================
 " Tmux query helpers
 " =========================
@@ -269,15 +274,19 @@ endfunction
 " =========================
 
 function! s:BuildContent(start, end) abort
+    let l:lines = getline(a:start, a:end)
+    let l:content = join(l:lines, "\n")
+
+    if g:ai_tmux_raw_content
+        return l:content
+    endif
+
     if g:ai_tmux_use_absolute_path
         let l:file = expand('%:p')
     else
         let l:file = expand('%')
     endif
     let l:filetype = &filetype
-    let l:lines = getline(a:start, a:end)
-    let l:content = join(l:lines, "\n")
-    let l:basename = fnamemodify(l:file, ':t')
 
     return printf(
     \ "文件：%s\n行号：%d-%d\n\n```%s\n%s\n```",

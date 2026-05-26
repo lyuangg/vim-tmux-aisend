@@ -80,6 +80,9 @@ let g:ai_tmux_always_current_window = 0
 " File path in output: 0 = relative (default), 1 = absolute
 let g:ai_tmux_use_absolute_path = 1
 
+" Output: 0 = full (file+lines+code block, default), 1 = raw content only
+let g:ai_tmux_raw_content = 1
+
 " Disable default mappings, use <Plug> instead
 let g:ai_tmux_no_mappings = 1
 nmap <leader>st <Plug>SetAITarget
