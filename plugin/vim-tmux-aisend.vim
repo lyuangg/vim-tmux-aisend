@@ -206,7 +206,8 @@ function! s:TmuxVars() abort
 endfunction
 
 " Interactive prompt that returns a target dict without persisting to g:ai_send_target
-" mode: 'window' → prompt window + pane, 'pane' → prompt pane only
+" mode: 'pane'  → prompt for pane only (session+window auto-selected)
+" mode: 'window' → prompt for window only, then auto-pick largest pane
 function! s:TmuxVarsInteractive(mode) abort
     if !s:IsTmux()
         return {}
@@ -214,8 +215,6 @@ function! s:TmuxVarsInteractive(mode) abort
 
     let l:active = s:ActiveTarget()
     let l:target = {}
-
-    " Always auto-select session (current session is sufficient)
     let l:target['session'] = l:active.session
 
     if a:mode ==# 'window'
@@ -233,21 +232,42 @@ function! s:TmuxVarsInteractive(mode) abort
         let l:target['window'] = l:active.window
     endif
 
-    " Pane
-    if g:ai_tmux_autoset_pane
-        let l:panes = s:AutoTmuxPanes()
-    else
-        let l:panes = s:TmuxPanes()
-    endif
-
-    if len(l:panes) == 1
-        let l:target['pane'] = l:panes[0]
-    else
-        let l:p = input('Pane: ', '', 'customlist,TmuxPaneNumbers')
-        if empty(l:p)
-            return {}
+    " Pane: in 'window' mode always auto-select, in 'pane' mode prompt
+    if a:mode ==# 'pane'
+        if g:ai_tmux_autoset_pane
+            let l:panes = s:AutoTmuxPanes()
+        else
+            let l:panes = s:TmuxPanes()
         endif
-        let l:target['pane'] = l:p
+        if len(l:panes) == 1
+            let l:target['pane'] = l:panes[0]
+        else
+            let l:p = input('Pane: ', '', 'customlist,TmuxPaneNumbers')
+            if empty(l:p)
+                return {}
+            endif
+            let l:target['pane'] = l:p
+        endif
+    else
+        " 'window' mode: auto-pick largest non-current pane in selected window
+        let l:panes = systemlist('tmux list-panes -t ' . shellescape(l:target['session'] . ':' . l:target['window']) . ' -F "#{pane_index} #{pane_height} #{pane_id}"')
+        let l:current = s:ActiveTarget()
+        let l:best_pane = ''
+        let l:best_h = -1
+        for line in l:panes
+            let [idx, h, pid; _] = split(line)
+            if l:current.session ==# l:target['session'] && l:current.window ==# l:target['window'] && idx ==# l:current.pane
+                continue
+            endif
+            if str2nr(h) > l:best_h
+                let l:best_h = str2nr(h)
+                let l:best_pane = idx
+            endif
+        endfor
+        if empty(l:best_pane) && !empty(l:panes)
+            let l:best_pane = split(l:panes[0])[0]
+        endif
+        let l:target['pane'] = l:best_pane
     endif
 
     return l:target

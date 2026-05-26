@@ -120,7 +120,7 @@ g:ai_tmux_interactive
     Set to 'pane' or 'window' to prompt interactively every time you send,
     instead of using a preset or auto-select.
       'pane'   → prompts for pane only (session+window auto-selected)
-      'window' → prompts for window, then pane
+      'window' → prompts for window only (pane auto-selected in that window)
       0        → preset / auto-select mode (default)
 
                                 *g:ai_tmux_fallback_clipboard*
