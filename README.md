@@ -15,8 +15,6 @@ Send code context to AI via clipboard or tmux — perfect for pasting code into 
 
 ```vim
 Plug 'lyuangg/vim-tmux-aisend'
-" or for local development:
-" Plug '~/yuan/github/vim-tmux-aisend'
 ```
 
 ### [packer.nvim](https://github.com/wbthomason/packer.nvim)
